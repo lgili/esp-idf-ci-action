@@ -18,7 +18,7 @@ jobs:
       with:
         submodules: 'recursive'
     - name: esp-idf build
-      uses: espressif/esp-idf-ci-action@v1
+      uses: lgili/esp-idf-ci-action@v1
       with:
         esp_idf_version: v4.4
         target: esp32s2
@@ -27,7 +27,7 @@ jobs:
 
 ## Version
 
-We recommend referencing this action as `espressif/esp-idf-ci-action@v1` and using `v1` instead of `main` to avoid breaking your workflows. `v1` tag always points to the latest compatible release.
+We recommend referencing this action as `lgili/esp-idf-ci-action@v1` and using `v1` instead of `main` to avoid breaking your workflows. `v1` tag always points to the latest compatible release.
 
 ## Parameters
 
@@ -60,3 +60,7 @@ Overriding this is useful for running other commands via github actions. Example
 ```yaml
 command: esptool.py merge_bin -o ../your_final_output.bin @flash_args
 ```
+
+### `access_token`
+
+Optional: access token that IDF Component Manager can use to fetch components from a private repo

@@ -4,6 +4,10 @@ branding:
   color: red
   icon: wifi
 inputs:
+  access_token:
+    description: "Access token used to access repos used for the project"
+    default: ""
+    required: false
   path:
     description: "Relative path under $GITHUB_WORKSPACE to place the repository"
     default: ""
@@ -25,8 +29,9 @@ runs:
   using: "composite"
   steps:
     - run: |
+        echo "RUNNING: ${{ inputs.command }}"
         export IDF_TARGET=$(echo "${{ inputs.target }}" | tr '[:upper:]' '[:lower:]' | tr -d '_-')
-        docker run -t -e IDF_TARGET="${IDF_TARGET}" -v "${GITHUB_WORKSPACE}:/app/${{ github.repository }}" \
+        docker run -t -e IDF_TARGET="${IDF_TARGET}" -e ACCESS_TOKEN="${{ inputs.access_token }}" -v "${GITHUB_WORKSPACE}:/app/${{ github.repository }}" \
         -w "/app/${{ github.repository }}/${{ inputs.path }}" espressif/idf:${{ inputs.esp_idf_version }} \
         /bin/bash -c 'git config --global --add safe.directory "*" && ${{ inputs.command }}'
       shell: bash

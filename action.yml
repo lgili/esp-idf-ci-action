@@ -4,8 +4,8 @@ branding:
   color: red
   icon: wifi
 inputs:
-  access_token:
-    description: "Access token used to access repos used for the project"
+  ssh:
+    description: "Forward ssh agent into Docker container"
     default: ""
     required: false
   path:
@@ -22,16 +22,39 @@ inputs:
     required: false
   command:
     description: "Command to run inside the docker container (default: builds the project)"
-    default: "idf.py build"
+    default: "idf.py -v build"
     required: false
 
 runs:
   using: "composite"
   steps:
-    - run: |
-        echo "RUNNING: ${{ inputs.command }}"
-        export IDF_TARGET=$(echo "${{ inputs.target }}" | tr '[:upper:]' '[:lower:]' | tr -d '_-')
-        docker run -t -e IDF_TARGET="${IDF_TARGET}" -e ACCESS_TOKEN="${{ inputs.access_token }}" -v "${GITHUB_WORKSPACE}:/app/${{ github.repository }}" \
-        -w "/app/${{ github.repository }}/${{ inputs.path }}" espressif/idf:${{ inputs.esp_idf_version }} \
-        /bin/bash -c 'git config --global --add safe.directory "*" && ${{ inputs.command }}'
+    - name: Adicionar GitHub aos hosts SSH conhecidos
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        git config --global --add safe.directory "*"
+        git config --global init.defaultBranch main
       shell: bash
+    - name: Build with ESP-IDF
+      run: |
+        export IDF_TARGET=$(echo "${{ inputs.target }}" | tr '[:upper:]' '[:lower:]' | tr -d '_-')
+        export SSH_AUTH_SOCK=${{ inputs.ssh }}
+        docker run -t \
+        -e IDF_TARGET="${IDF_TARGET}" \
+        -v $SSH_AUTH_SOCK:/ssh-agent \
+        -e SSH_AUTH_SOCK=/ssh-agent \
+        -e HOME=/tmp \
+        -v "${GITHUB_WORKSPACE}:/project" \
+        -w "/project/${{ inputs.path }}" \
+        espressif/idf:${{ inputs.esp_idf_version }} \
+        /bin/bash -c "\  
+        apt-get install git && \
+        mkdir -p ~/.ssh && \
+        ssh-keyscan github.com >> ~/.ssh/known_hosts && \
+        git config --global --add safe.directory "*" && \
+        git config --global init.defaultBranch main && \
+        pip install --upgrade idf-component-manager && \    
+        git log -3  && \
+        ${{ inputs.command }}"
+      shell: bash
+      
